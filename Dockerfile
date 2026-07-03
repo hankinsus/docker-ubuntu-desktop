@@ -7,6 +7,7 @@ RUN apt update && apt install -y \
     tigervnc-standalone-server novnc \
     python3-pip curl unzip wget procps net-tools iputils-ping \
     fonts-wqy-microhei fonts-wqy-zenhei language-pack-zh-hans \
+    firefox firefox-locale-zh-hans \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. 安装 websockify
