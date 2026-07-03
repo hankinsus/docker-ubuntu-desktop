@@ -1,10 +1,13 @@
 FROM --platform=linux/amd64 ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. 基础环境安装
+# 1. 基础环境与工具安装
+# 安装 XFCE4 桌面、VNC、Xray 核心、网络调试工具、中文字库
 RUN apt update && apt install -y \
-    xfce4 tigervnc-standalone-server novnc \
-    python3-pip curl unzip wget procps net-tools \
+    xfce4 xfce4-goodies xfce4-terminal \
+    tigervnc-standalone-server novnc \
+    python3-pip curl unzip wget procps net-tools iputils-ping \
+    fonts-wqy-microhei fonts-wqy-zenhei language-pack-zh-hans \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. 安装 websockify
@@ -19,9 +22,15 @@ RUN wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-6
 RUN mkdir -p /etc/xray
 RUN echo '{"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"9b191c56-d0fd-6889-ac99-3016ba36a189"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/"}}}],"outbounds":[{"protocol":"freedom"}]}' > /etc/xray/config.json
 
-# 5. 定义启动逻辑
-# --I-KNOW-THIS-IS-INSECURE 是必须的参数，否则 VNC 会在启动时自毁
-CMD vncserver :1 -localhost no -SecurityTypes None -geometry 1024x768 --I-KNOW-THIS-IS-INSECURE && \
+# 5. 直接强制设置为中文环境 (解决语言问题)
+ENV LANG=zh_CN.UTF-8
+ENV LANGUAGE=zh_CN:zh
+ENV LC_ALL=zh_CN.UTF-8
+
+# 6. 定义启动入口
+# 自动创建权限文件、免密启动 VNC、启动 websockify、启动 Xray
+CMD touch /root/.Xauthority && \
+    vncserver :1 -localhost no -SecurityTypes None -geometry 1280x720 --I-KNOW-THIS-IS-INSECURE && \
     websockify -D 6080 localhost:5901 && \
     /usr/local/bin/xray run -c /etc/xray/config.json && \
     tail -f /dev/null
