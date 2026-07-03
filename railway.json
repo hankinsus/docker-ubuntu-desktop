@@ -1,0 +1,5 @@
+{
+  "deploy": {
+    "cap_add": ["NET_ADMIN"]
+  }
+}
