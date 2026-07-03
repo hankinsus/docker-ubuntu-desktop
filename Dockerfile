@@ -1,20 +1,27 @@
-#!/bin/bash
+FROM --platform=linux/amd64 ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. 启动 Xray (后台运行)
-/usr/local/bin/xray run -c /etc/xray/config.json &
+# 1. 安装基础工具与依赖
+RUN apt update && apt install -y \
+    xfce4 tigervnc-standalone-server novnc \
+    python3-pip curl unzip wget procps net-tools \
+    && rm -rf /var/lib/apt/lists/*
 
-# 2. VNC 稳健启动：强制免密，且在后台运行
-# 注意：vncserver :1 是启动显示 1，这是标准的 VNC 启动方式
-mkdir -p ~/.vnc
-echo "password" | vncpasswd -f > ~/.vnc/passwd
-chmod 600 ~/.vnc/passwd
+# 2. 安装 websockify
+RUN pip3 install websockify
 
-# 启动 VNC 桌面服务
-vncserver :1 -geometry 1024x768 -depth 24 &
+# 3. 安装 Xray Core
+RUN wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+    unzip Xray-linux-64.zip -d /usr/local/bin/ && rm Xray-linux-64.zip && \
+    chmod +x /usr/local/bin/xray
 
-# 3. 启动 websockify 转发 (novnc 端口)
-# 确保它指向 5901 (即 :1 对应的端口)
-websockify -D --web=/usr/share/novnc/ 6080 localhost:5901
+# 4. 写入 Xray 配置文件
+RUN mkdir -p /etc/xray
+RUN echo '{"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"9b191c56-d0fd-6889-ac99-3016ba36a189"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/"}}}],"outbounds":[{"protocol":"freedom"}]}' > /etc/xray/config.json
 
-# 保持存活
-tail -f /dev/null
+# 5. 定义容器启动入口 (必须使用 CMD 或 ENTRYPOINT)
+# 我们在这一步启动 VNC、websockify 和 Xray
+CMD vncserver :1 -localhost no -SecurityTypes None -geometry 1024x768 && \
+    websockify -D 6080 localhost:5901 && \
+    /usr/local/bin/xray run -c /etc/xray/config.json && \
+    tail -f /dev/null
