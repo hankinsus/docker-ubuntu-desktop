@@ -1,36 +1,44 @@
 FROM --platform=linux/amd64 ubuntu:22.04
+
 ENV DEBIAN_FRONTEND=noninteractive
-
-# 1. 基础环境与工具安装
-RUN apt update && apt install -y \
-    xfce4 xfce4-goodies xfce4-terminal \
-    tigervnc-standalone-server novnc \
-    python3-pip curl unzip wget procps net-tools iputils-ping \
-    fonts-wqy-microhei fonts-wqy-zenhei language-pack-zh-hans \
-    firefox firefox-locale-zh-hans \
-    && rm -rf /var/lib/apt/lists/*
-
-# 2. 安装 websockify
-RUN pip3 install websockify
-
-# 3. 安装 Xray Core
-RUN wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
-    unzip Xray-linux-64.zip -d /usr/local/bin/ && rm Xray-linux-64.zip && \
-    chmod +x /usr/local/bin/xray
-
-# 4. 写入 Xray 配置文件
-RUN mkdir -p /etc/xray
-RUN echo '{"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"9b191c56-d0fd-6889-ac99-3016ba36a189"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/"}}}],"outbounds":[{"protocol":"freedom"}]}' > /etc/xray/config.json
-
-# 5. 设置中文环境
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
 ENV LC_ALL=zh_CN.UTF-8
 
-# 6. 核心优化：修复 405 错误与自动启动
-# 注意：我们增加了 --vnc 路径指向和正确的命令组合
-CMD touch /root/.Xauthority && \
-    vncserver :1 -localhost no -SecurityTypes None -geometry 1280x720 --I-KNOW-THIS-IS-INSECURE && \
-    websockify --web=/usr/share/novnc/ 6080 localhost:5901 & \
-    /usr/local/bin/xray run -c /etc/xray/config.json & \
-    tail -f /dev/null
+# 基础环境 + 桌面 + VNC + 中文支持
+RUN apt-get update && apt-get install -y \
+    xfce4 xfce4-goodies xfce4-terminal \
+    tigervnc-standalone-server novnc \
+    python3-pip curl unzip wget procps net-tools iputils-ping \
+    fonts-wqy-microhei fonts-wqy-zenhei language-pack-zh-hans \
+    dbus-x11 libgtk-3-0 libdbus-glib-1-2 libxt6 \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# 强制安装 deb 版 Firefox（避免 Snap 问题）
+RUN add-apt-repository -y ppa:mozillateam/ppa && \
+    echo 'Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox && \
+    apt-get update && \
+    apt-get install -y firefox firefox-locale-zh-hans && \
+    rm -rf /var/lib/apt/lists/*
+
+# 安装 websockify
+RUN pip3 install websockify
+
+# 安装 Xray
+RUN wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+    unzip Xray-linux-64.zip -d /usr/local/bin/ && \
+    rm Xray-linux-64.zip && \
+    chmod +x /usr/local/bin/xray
+
+# 复制启动脚本
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# 复制 monitor（如果有的话）
+COPY monitor.py /opt/scripts/monitor.py
+RUN mkdir -p /opt/scripts
+
+EXPOSE 6080
+
+CMD ["/start.sh"]
