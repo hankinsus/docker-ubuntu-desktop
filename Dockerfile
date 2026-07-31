@@ -26,21 +26,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgtk-3-0 \
     libdbus-glib-1-2 \
     libxt6 \
-    software-properties-common \
-    gnupg \
-    ca-certificates \
+    libasound2 \
+    libx11-xcb1 \
+    libxcb-shm0 \
+    libxcb-render0 \
+    libxrender1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# ========== 强制安装真正的 deb 版 Firefox ==========
-RUN install -d -m 0755 /etc/apt/keyrings && \
-    wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null && \
-    echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee /etc/apt/sources.list.d/mozilla.list > /dev/null
-
-RUN echo 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends firefox && \
-    rm -rf /var/lib/apt/lists/*
+# ========== 直接下载官方 Firefox 二进制包（最可靠） ==========
+RUN mkdir -p /opt/firefox && \
+    wget -q "https://download-installer.cdn.mozilla.net/pub/firefox/releases/128.0/linux-x86_64/zh-CN/firefox-128.0.tar.bz2" -O /tmp/firefox.tar.bz2 && \
+    tar -xjf /tmp/firefox.tar.bz2 -C /opt/ && \
+    rm /tmp/firefox.tar.bz2 && \
+    ln -sf /opt/firefox/firefox /usr/bin/firefox
 
 # 安装 websockify
 RUN pip3 install --no-cache-dir websockify
