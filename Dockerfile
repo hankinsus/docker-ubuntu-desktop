@@ -5,7 +5,7 @@ ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
 ENV LC_ALL=zh_CN.UTF-8
 
-# 基础环境 + 桌面 + VNC + 中文支持
+# 基础环境
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4 \
     xfce4-goodies \
@@ -27,13 +27,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-glib-1-2 \
     libxt6 \
     software-properties-common \
+    gnupg \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 强制安装 deb 版 Firefox（解决 Snap 导致看不到的问题）
-RUN add-apt-repository -y ppa:mozillateam/ppa && \
-    printf 'Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n' > /etc/apt/preferences.d/mozilla-firefox && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends firefox firefox-locale-zh-hans && \
+# ========== 强制安装真正的 deb 版 Firefox ==========
+# 1. 添加 Mozilla 官方源（比 PPA 更可靠）
+RUN install -d -m 0755 /etc/apt/keyrings && \
+    wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null && \
+    echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee /etc/apt/sources.list.d/mozilla.list > /dev/null
+
+# 2. 设置最高优先级，强制使用 Mozilla 源
+RUN echo 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla
+
+# 3. 安装 Firefox
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends firefox && \
     rm -rf /var/lib/apt/lists/*
 
 # 安装 websockify
@@ -45,10 +54,10 @@ RUN wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linu
     rm -f Xray-linux-64.zip && \
     chmod +x /usr/local/bin/xray
 
-# 创建必要目录
+# 创建目录
 RUN mkdir -p /etc/xray /opt/scripts
 
-# 复制启动脚本和 monitor
+# 复制脚本
 COPY start.sh /start.sh
 COPY monitor.py /opt/scripts/monitor.py
 RUN chmod +x /start.sh
