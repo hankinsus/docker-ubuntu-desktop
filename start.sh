@@ -3,31 +3,40 @@
 set -e
 
 
-echo "Starting Ubuntu Desktop Container"
+echo "Starting Ubuntu Desktop"
 
 
 #################################
-# 创建显示环境
+# 环境
 #################################
 
 export DISPLAY=:1
 
 
-Xvfb :1 -screen 0 1280x720x24 &
+#################################
+# X Server
+#################################
+
+Xvfb :1 \
+-screen 0 1280x720x24 \
+-ac &
 
 
-sleep 2
+sleep 3
 
 
 #################################
-# 启动 XFCE
+# XFCE桌面
 #################################
 
 startxfce4 &
 
 
+sleep 3
+
+
 #################################
-# 启动 VNC
+# VNC
 #################################
 
 x11vnc \
@@ -39,41 +48,47 @@ x11vnc \
 
 
 #################################
-# 启动 noVNC
+# noVNC
 #################################
 
-/usr/share/novnc/utils/novnc_proxy \
---vnc localhost:5900 \
---listen 6080 &
+websockify \
+--web=/usr/share/novnc \
+6080 \
+localhost:5900 &
 
 
 
 #################################
-# Xray端口
+# Xray
 #################################
 
-XRAY_PORT=${XRAY_PORT:-8080}
+UUID=${UUID:-"9b191c56-d0fd-6889-ac99-3016ba36a189"}
+
+XRAY_PORT=${PORT:-8080}
 
 
-cat > /usr/local/etc/xray/config.json <<EOF
+mkdir -p /etc/xray
+
+
+cat >/etc/xray/config.json <<EOF
 
 {
-"log": {
-"level": "warning"
+"log":{
+"level":"warning"
 },
 
-"inbounds": [
+"inbounds":[
 {
-"listen": "0.0.0.0",
-"port": $XRAY_PORT,
-"protocol": "vless",
+"listen":"0.0.0.0",
+"port":${XRAY_PORT},
 
-"settings": {
+"protocol":"vless",
 
-"clients": [
+"settings":{
+
+"clients":[
 {
-"id": "YOUR-UUID-HERE",
-"flow": ""
+"id":"${UUID}"
 }
 ],
 
@@ -81,8 +96,7 @@ cat > /usr/local/etc/xray/config.json <<EOF
 
 },
 
-
-"streamSettings": {
+"streamSettings":{
 
 "network":"tcp"
 
@@ -105,9 +119,8 @@ EOF
 
 
 
-echo "Starting Xray port $XRAY_PORT"
+echo "Xray running port ${XRAY_PORT}"
 
 
-/usr/local/bin/xray \
-run \
--c /usr/local/etc/xray/config.json
+/usr/local/bin/xray run \
+-c /etc/xray/config.json
