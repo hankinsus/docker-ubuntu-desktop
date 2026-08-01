@@ -34,4 +34,9 @@ EOF
 # 启动 Xray
 /usr/local/bin/xray run -c /etc/xray/config.json &
 
+# 等待桌面完全启动后自动打开 Firefox
+sleep 3
+export DISPLAY=:1
+firefox &
+
 tail -f /dev/null
