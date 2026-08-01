@@ -1,92 +1,42 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LANG=zh_CN.UTF-8
-ENV LANGUAGE=zh_CN:zh
-ENV LC_ALL=zh_CN.UTF-8
 
-# 基础环境 + 桌面 + VNC + 中文支持 + Firefox依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    xfce4 \
-    xfce4-goodies \
-    xfce4-terminal \
-    tigervnc-standalone-server \
-    novnc \
-    python3-pip \
+ENV TZ=Asia/Shanghai
+
+RUN apt update && apt install -y \
+    wget \
     curl \
     unzip \
-    wget \
-    procps \
+    supervisor \
     net-tools \
-    iputils-ping \
-    fonts-wqy-microhei \
-    fonts-wqy-zenhei \
-    language-pack-zh-hans \
-    dbus-x11 \
-    libgtk-3-0 \
-    libdbus-glib-1-2 \
-    libxt6 \
-    libasound2 \
-    libx11-xcb1 \
-    libxcb-shm0 \
-    libxcb-render0 \
-    libxrender1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libgbm1 \
-    libpango-1.0-0 \
-    libcairo2 \
-    xz-utils \
-    bzip2 \
+    xfce4 \
+    xfce4-goodies \
+    x11vnc \
+    xvfb \
+    novnc \
+    python3 \
+    python3-websockify \
+    firefox \
     && rm -rf /var/lib/apt/lists/*
 
-# ========== 直接下载官方 Firefox 二进制包 + 创建菜单快捷方式 ==========
-RUN mkdir -p /opt && \
-    wget -q "https://ftp.mozilla.org/pub/firefox/releases/153.0.1/linux-x86_64/zh-CN/firefox-153.0.1.tar.xz" -O /tmp/firefox.tar.xz && \
-    tar -xJf /tmp/firefox.tar.xz -C /opt/ && \
-    rm /tmp/firefox.tar.xz && \
-    ln -sf /opt/firefox/firefox /usr/bin/firefox && \
-    mkdir -p /usr/share/applications && \
-    echo '[Desktop Entry]' > /usr/share/applications/firefox.desktop && \
-    echo 'Name=Firefox' >> /usr/share/applications/firefox.desktop && \
-    echo 'Name[zh_CN]=火狐浏览器' >> /usr/share/applications/firefox.desktop && \
-    echo 'Comment=Browse the World Wide Web' >> /usr/share/applications/firefox.desktop && \
-    echo 'Comment[zh_CN]=浏览互联网' >> /usr/share/applications/firefox.desktop && \
-    echo 'Exec=firefox --no-sandbox --disable-gpu --disable-dev-shm-usage %u' >> /usr/share/applications/firefox.desktop && \
-    echo 'Icon=/opt/firefox/browser/chrome/icons/default/default128.png' >> /usr/share/applications/firefox.desktop && \
-    echo 'Terminal=false' >> /usr/share/applications/firefox.desktop && \
-    echo 'Type=Application' >> /usr/share/applications/firefox.desktop && \
-    echo 'Categories=Network;WebBrowser;' >> /usr/share/applications/firefox.desktop && \
-    echo 'MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/vnd.mozilla.xul+xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;' >> /usr/share/applications/firefox.desktop && \
-    chmod 644 /usr/share/applications/firefox.desktop
-
-# 安装 websockify
-RUN pip3 install --no-cache-dir websockify
 
 # 安装 Xray
-RUN wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
-    unzip -o Xray-linux-64.zip -d /usr/local/bin/ && \
-    rm -f Xray-linux-64.zip && \
-    chmod +x /usr/local/bin/xray
+RUN bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
-# 创建必要目录
-RUN mkdir -p /etc/xray /opt/scripts
 
-# 复制启动脚本
+COPY xray/config.json /usr/local/etc/xray/config.json
+
+
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+
 COPY start.sh /start.sh
-COPY monitor.py /opt/scripts/monitor.py
+
 RUN chmod +x /start.sh
 
-EXPOSE 6080
+
+EXPOSE 6080 8080
+
 
 CMD ["/start.sh"]
