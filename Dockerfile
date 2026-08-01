@@ -5,8 +5,13 @@ ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
 ENV LC_ALL=zh_CN.UTF-8
 
-# 基础环境 + 桌面 + VNC + 中文 + Firefox依赖
+# 安装基础环境 + 中文 + 桌面 + VNC + Firefox依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    locales \
+    language-pack-zh-hans \
+    fonts-wqy-microhei \
+    fonts-wqy-zenhei \
+    fonts-noto-cjk \
     xfce4 \
     xfce4-goodies \
     xfce4-terminal \
@@ -18,9 +23,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     procps \
     net-tools \
-    fonts-wqy-microhei \
-    fonts-wqy-zenhei \
-    language-pack-zh-hans \
     dbus-x11 \
     libgtk-3-0 \
     libdbus-glib-1-2 \
@@ -36,9 +38,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libcairo2 \
     xz-utils \
+    && locale-gen zh_CN.UTF-8 \
+    && update-locale LANG=zh_CN.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装官方 Firefox 二进制 + 菜单快捷方式
+# 安装官方中文 Firefox + 菜单快捷方式
 RUN mkdir -p /opt && \
     wget -q "https://ftp.mozilla.org/pub/firefox/releases/153.0.1/linux-x86_64/zh-CN/firefox-153.0.1.tar.xz" -O /tmp/firefox.tar.xz && \
     tar -xJf /tmp/firefox.tar.xz -C /opt/ && \
@@ -50,6 +54,7 @@ RUN mkdir -p /opt && \
       'Name=Firefox' \
       'Name[zh_CN]=火狐浏览器' \
       'Comment=Browse the World Wide Web' \
+      'Comment[zh_CN]=浏览互联网' \
       'Exec=firefox --no-sandbox --disable-gpu --disable-dev-shm-usage %u' \
       'Icon=/opt/firefox/browser/chrome/icons/default/default128.png' \
       'Terminal=false' \
