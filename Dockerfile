@@ -5,7 +5,7 @@ ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
 ENV LC_ALL=zh_CN.UTF-8
 
-# 基础环境
+# 基础环境 + 桌面 + VNC + 中文支持 + Firefox依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4 \
     xfce4-goodies \
@@ -46,13 +46,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm1 \
     libpango-1.0-0 \
     libcairo2 \
+    xz-utils \
+    bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
 # ========== 直接下载官方 Firefox 二进制包（最可靠） ==========
-RUN mkdir -p /opt/firefox && \
-    wget -q "https://download-installer.cdn.mozilla.net/pub/firefox/releases/128.0/linux-x86_64/zh-CN/firefox-128.0.tar.bz2" -O /tmp/firefox.tar.bz2 && \
-    tar -xjf /tmp/firefox.tar.bz2 -C /opt/ && \
-    rm /tmp/firefox.tar.bz2 && \
+RUN mkdir -p /opt && \
+    wget -q "https://ftp.mozilla.org/pub/firefox/releases/153.0.1/linux-x86_64/zh-CN/firefox-153.0.1.tar.xz" -O /tmp/firefox.tar.xz && \
+    tar -xJf /tmp/firefox.tar.xz -C /opt/ && \
+    rm /tmp/firefox.tar.xz && \
     ln -sf /opt/firefox/firefox /usr/bin/firefox
 
 # 安装 websockify
@@ -64,8 +66,10 @@ RUN wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linu
     rm -f Xray-linux-64.zip && \
     chmod +x /usr/local/bin/xray
 
+# 创建必要目录
 RUN mkdir -p /etc/xray /opt/scripts
 
+# 复制启动脚本
 COPY start.sh /start.sh
 COPY monitor.py /opt/scripts/monitor.py
 RUN chmod +x /start.sh
