@@ -16,7 +16,7 @@ mount -o remount,size=512M /dev/shm 2>/dev/null || true
 # 限制为约 120Mbps（可按需要调整）
 if command -v tc >/dev/null 2>&1; then
     tc qdisc del dev eth0 root 2>/dev/null || true
-    tc qdisc add dev eth0 root tbf rate 60mbit burst 32kbit latency 400ms 2>/dev/null || true
+    tc qdisc add dev eth0 root tbf rate 180mbit burst 64kbit latency 400ms 2>/dev/null || true
 fi
 
 # 启动 VNC（支持自适应分辨率）
