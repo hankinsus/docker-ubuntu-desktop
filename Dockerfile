@@ -1,41 +1,39 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-
 ENV TZ=Asia/Shanghai
 
 RUN apt update && apt install -y \
-    wget \
-    curl \
-    unzip \
-    supervisor \
-    net-tools \
     xfce4 \
     xfce4-goodies \
     x11vnc \
     xvfb \
     novnc \
-    python3 \
-    python3-websockify \
+    websockify \
+    supervisor \
+    curl \
+    wget \
+    unzip \
+    net-tools \
     firefox \
-    && rm -rf /var/lib/apt/lists/*
+    && apt clean
 
 
 # 安装 Xray
-RUN bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+RUN bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)"
 
 
-COPY xray/config.json /usr/local/etc/xray/config.json
+# 创建目录
+RUN mkdir -p /etc/xray
 
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-
+# 下载 Xray 配置
 COPY start.sh /start.sh
 
 RUN chmod +x /start.sh
 
 
+# Railway需要
 EXPOSE 6080 8080
 
 
