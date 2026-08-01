@@ -50,12 +50,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
-# ========== 直接下载官方 Firefox 二进制包（最可靠） ==========
+# ========== 直接下载官方 Firefox 二进制包 + 创建菜单快捷方式 ==========
 RUN mkdir -p /opt && \
     wget -q "https://ftp.mozilla.org/pub/firefox/releases/153.0.1/linux-x86_64/zh-CN/firefox-153.0.1.tar.xz" -O /tmp/firefox.tar.xz && \
     tar -xJf /tmp/firefox.tar.xz -C /opt/ && \
     rm /tmp/firefox.tar.xz && \
-    ln -sf /opt/firefox/firefox /usr/bin/firefox
+    ln -sf /opt/firefox/firefox /usr/bin/firefox && \
+    mkdir -p /usr/share/applications && \
+    echo '[Desktop Entry]' > /usr/share/applications/firefox.desktop && \
+    echo 'Name=Firefox' >> /usr/share/applications/firefox.desktop && \
+    echo 'Name[zh_CN]=火狐浏览器' >> /usr/share/applications/firefox.desktop && \
+    echo 'Comment=Browse the World Wide Web' >> /usr/share/applications/firefox.desktop && \
+    echo 'Comment[zh_CN]=浏览互联网' >> /usr/share/applications/firefox.desktop && \
+    echo 'Exec=firefox --no-sandbox --disable-gpu --disable-dev-shm-usage %u' >> /usr/share/applications/firefox.desktop && \
+    echo 'Icon=/opt/firefox/browser/chrome/icons/default/default128.png' >> /usr/share/applications/firefox.desktop && \
+    echo 'Terminal=false' >> /usr/share/applications/firefox.desktop && \
+    echo 'Type=Application' >> /usr/share/applications/firefox.desktop && \
+    echo 'Categories=Network;WebBrowser;' >> /usr/share/applications/firefox.desktop && \
+    echo 'MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/vnd.mozilla.xul+xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;' >> /usr/share/applications/firefox.desktop && \
+    chmod 644 /usr/share/applications/firefox.desktop
 
 # 安装 websockify
 RUN pip3 install --no-cache-dir websockify
