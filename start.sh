@@ -6,9 +6,9 @@ export USER=root
 export HOME=/root
 touch /root/.Xauthority
 
-# 扩大共享内存（解决 Firefox 测速闪退）
-mount -o remount,size=2G /dev/shm 2>/dev/null || \
-mount -t tmpfs -o size=2G tmpfs /dev/shm 2>/dev/null || true
+# 尝试扩大共享内存
+mount -o remount,size=512M /dev/shm 2>/dev/null || \
+mount -t tmpfs -o size=512M tmpfs /dev/shm 2>/dev/null || true
 
 # 启动 VNC
 vncserver :1 -localhost no -SecurityTypes None -geometry 1280x720 --I-KNOW-THIS-IS-INSECURE
@@ -38,9 +38,13 @@ EOF
 # 启动 Xray
 /usr/local/bin/xray run -c /etc/xray/config.json &
 
-# 等待桌面完全启动后自动打开 Firefox
+# 等待桌面启动后，用低内存模式打开 Firefox
 sleep 3
 export DISPLAY=:1
-firefox --no-sandbox --disable-gpu --disable-dev-shm-usage &
+
+# 强制单进程 + 关闭沙盒，大幅降低内存占用
+export MOZ_FORCE_DISABLE_E10S=1
+export MOZ_DISABLE_CONTENT_SANDBOX=1
+firefox --no-sandbox --disable-gpu --disable-dev-shm-usage --disable-extensions &
 
 tail -f /dev/null
