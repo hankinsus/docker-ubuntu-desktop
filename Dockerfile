@@ -42,9 +42,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && update-locale LANG=zh_CN.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
-# 创建默认首页，访问根目录自动进入自适应分辨率 VNC
-RUN echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=vnc.html?autoconnect=1&resize=remote"><title>VNC</title></head><body>正在进入桌面...</body></html>' > /usr/share/novnc/index.html
-
 # 安装官方中文 Firefox + 菜单快捷方式
 RUN mkdir -p /opt && \
     wget -q "https://ftp.mozilla.org/pub/firefox/releases/153.0.1/linux-x86_64/zh-CN/firefox-153.0.1.tar.xz" -O /tmp/firefox.tar.xz && \
